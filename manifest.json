@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "GitLab Notifier",
+  "version": "1.0.3",
+  "description": "Отслеживает активность на self-hosted GitLab (комментарии в MR и пайплайны) и отправляет уведомления в Telegram",
+  "minimum_chrome_version": "88",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": "assets/icons/icon.png"
+  },
+  "options_page": "src/options/options.html",
+  "icons": {
+    "16": "assets/icons/icon.png",
+    "48": "assets/icons/icon.png",
+    "128": "assets/icons/icon.png"
+  }
+}
+

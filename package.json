@@ -1,0 +1,26 @@
+{
+  "name": "gitlab-notifier",
+  "version": "1.0.3",
+  "description": "Chrome расширение для отслеживания активности на self-hosted GitLab с уведомлениями в Telegram",
+  "author": "StiflerPasha",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StiflerPasha/gitlab-notifier.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "gitlab",
+    "telegram",
+    "notifications",
+    "merge-requests",
+    "pipelines",
+    "ci-cd",
+    "self-hosted"
+  ],
+  "scripts": {
+    "build": "echo 'No build step required for this extension'",
+    "package": "zip -r gitlab-notifier.zip . -x '*.git*' 'node_modules/*' '*.md' 'package*.json' 'docs/*'"
+  }
+}
+

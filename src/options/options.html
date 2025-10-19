@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitLab Notifier - Настройки</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ Настройки</h1>
+    </div>
+
+    <div class="content">
+      <!-- GitLab Settings -->
+      <div class="section">
+        <h2 class="section-title">🦊 Настройки GitLab</h2>
+        
+        <div class="form-group">
+          <label for="gitlabUrl" class="form-label">URL вашего GitLab</label>
+          <input
+            type="text"
+            id="gitlabUrl"
+            class="form-input"
+            placeholder="https://gitlab.example.com"
+          />
+          <p class="form-hint">Укажите полный URL вашего self-hosted GitLab</p>
+        </div>
+
+        <div class="form-group">
+          <label for="gitlabToken" class="form-label">Personal Access Token</label>
+          <div class="input-with-button">
+            <input
+              type="password"
+              id="gitlabToken"
+              class="form-input input-with-icon"
+              placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+            />
+            <button 
+              type="button" 
+              id="toggleGitlabToken"
+              class="toggle-password" 
+              title="Показать/скрыть токен"
+            >
+              🔒
+            </button>
+          </div>
+          <p class="form-hint">
+            Создайте токен в GitLab: <code>Settings → Access Tokens → Personal Access Tokens</code><br>
+            Необходимые права: <code>read_api</code> (для MR) или <code>api</code> (для MR + пайплайны)
+          </p>
+        </div>
+
+        <div class="button-group">
+          <button id="testGitlabBtn" class="button button-secondary">
+            🧪 Проверить подключение
+          </button>
+          <button id="loadProjectsBtn" class="button button-secondary" disabled style="opacity: 0.5;" title="Сначала проверьте подключение">
+            📂 Загрузить проекты
+          </button>
+        </div>
+        <p class="form-hint">
+          💡 <strong>Важно:</strong> Сначала проверьте подключение
+        </p>
+
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Projects Selection -->
+      <div class="section">
+        <h2 class="section-title">📂 Проекты для отслеживания</h2>
+        
+        <div class="form-group hidden" id="projectsSearchContainer">
+          <input 
+            type="text" 
+            id="projectsSearch" 
+            class="form-input" 
+            placeholder="🔍 Поиск проектов..."
+          />
+        </div>
+
+        <div class="projects-stats hidden" id="projectsStats">
+          <span>Всего проектов: <strong id="totalProjects">0</strong></span>
+          <span>Выбрано: <strong id="selectedProjects">0</strong></span>
+          <div class="auto-select-container">
+            <button id="autoSelectMyProjectsBtn" class="button button-secondary button-compact">
+              ✨ Автовыбор моих проектов
+            </button>
+          </div>
+        </div>
+
+        <div id="projectsList" class="projects-list">
+          <div class="loading-projects">
+            Нажмите "Загрузить проекты" после настройки GitLab
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Telegram Settings -->
+      <div class="section">
+        <h2 class="section-title">📱 Настройки Telegram</h2>
+        
+        <div class="form-group">
+          <label for="telegramBotToken" class="form-label">Bot Token</label>
+          <div class="input-with-button">
+            <input
+              type="password"
+              id="telegramBotToken"
+              class="form-input input-with-icon"
+              placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+            />
+            <button 
+              type="button" 
+              id="toggleTelegramBotToken"
+              class="toggle-password" 
+              title="Показать/скрыть токен"
+            >
+              🔒
+            </button>
+          </div>
+          <p class="form-hint">
+            Создайте бота через <a href="https://t.me/BotFather" target="_blank">@BotFather</a> в Telegram<br>
+            Команда: <code>/newbot</code>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="telegramChatId" class="form-label">Chat ID</label>
+          <input 
+            type="text" 
+            id="telegramChatId" 
+            class="form-input" 
+            placeholder="123456789 или @channel_name"
+          />
+          <p class="form-hint">
+            Узнайте свой Chat ID через <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a><br>
+            Или укажите @username канала (бот должен быть админом канала)<br>
+            <strong>⚠️ ВАЖНО:</strong> Сначала напишите боту любое сообщение или нажмите "Start"!
+          </p>
+        </div>
+
+        <button id="testTelegramBtn" class="button button-secondary">
+          🧪 Тестовое сообщение
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Notification Settings -->
+      <div class="section">
+        <h2 class="section-title">🔔 Настройки уведомлений</h2>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="notifyMRComments" class="checkbox" />
+          <label for="notifyMRComments" class="checkbox-label">
+            Уведомлять о новых комментариях в Merge Requests
+          </label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="notifyPipelines" class="checkbox" />
+          <label for="notifyPipelines" class="checkbox-label">
+            Уведомлять об изменении статусов пайплайнов
+          </label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="showBrowserNotifications" class="checkbox" />
+          <label for="showBrowserNotifications" class="checkbox-label">
+            Показывать браузерные уведомления
+          </label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="notifyOwnComments" class="checkbox" />
+          <label for="notifyOwnComments" class="checkbox-label">
+            Получать уведомления о своих комментариях
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="checkInterval" class="form-label">Интервал проверки (минуты)</label>
+          <input
+            type="number"
+            id="checkInterval"
+            class="form-input"
+            min="1"
+            max="60"
+            value="2"
+          />
+          <p class="form-hint">Как часто проверять GitLab на новую активность (от 1 до 60 минут)</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Save Settings -->
+      <div class="button-group">
+        <button id="saveBtn" class="button button-primary">
+          💾 Сохранить настройки
+        </button>
+        <button id="resetBtn" class="button button-secondary">
+          🔄 Сбросить к дефолтным
+        </button>
+      </div>
+    </div>
+
+    <!-- Alerts (Fixed Position) -->
+    <div id="alertSuccess" class="alert alert-success"></div>
+    <div id="alertError" class="alert alert-error"></div>
+    <div id="alertInfo" class="alert alert-info"></div>
+
+    <div class="footer">
+      GitLab Notifier | Сделано с ❤️ by Yana Chlene
+    </div>
+  </div>
+
+  <script src="./options.js" type="module"></script>
+</body>
+</html>
+
+

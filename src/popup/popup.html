@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitLab Notifier</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>🔔 GitLab Notifier</h1>
+      </div>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Загрузка...</p>
+      </div>
+
+      <div id="content" style="display: none;">
+        <div id="vpnWarning" class="warning-banner" style="display: none;">
+          ⚠️ GitLab недоступен. Проверьте VPN подключение.
+        </div>
+
+        <div class="status-card">
+          <div class="status-row">
+            <span class="status-label">📊 Статус</span>
+            <span class="status-value">
+              <span id="statusIndicator" class="status-indicator"></span>
+              <span id="statusText">Неактивен</span>
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">🦊 GitLab</span>
+            <span class="status-value" id="gitlabStatus">Не настроен</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">📱 Telegram</span>
+            <span class="status-value" id="telegramStatus">Не настроен</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">📂 Проектов</span>
+            <span class="status-value" id="projectsCount">0</span>
+          </div>
+        </div>
+
+        <div class="toggle-container">
+          <span class="toggle-label">🔔 Уведомления</span>
+          <div id="toggleSwitch" class="toggle-switch" role="button" tabindex="0" aria-label="Переключатель уведомлений">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+
+        <button id="checkNowBtn" class="button button-primary">
+          ⚡ Проверить сейчас
+        </button>
+
+        <button id="settingsBtn" class="button button-secondary">
+          ⚙️ Настройки
+        </button>
+      </div>
+    </div>
+
+    <div class="footer">
+      🕒 Последняя проверка: <span id="lastCheck">никогда</span>
+    </div>
+  </div>
+
+  <script src="./popup.js" type="module"></script>
+</body>
+</html>
+
+
