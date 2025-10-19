@@ -30,7 +30,7 @@ export class StorageManager {
     };
 
     const stored = await chrome.storage.local.get(defaults);
-    
+
     // Если нет сохраненных настроек, сохраняем дефолтные
     if (!stored.gitlabUrl) {
       await chrome.storage.local.set(defaults);
@@ -39,8 +39,7 @@ export class StorageManager {
 
   // Получение всех настроек
   static async getSettings() {
-    const data = await chrome.storage.local.get(null);
-    return data;
+    return await chrome.storage.local.get(null);
   }
 
   // Сохранение настроек
@@ -91,7 +90,7 @@ export class StorageManager {
   static async markNoteAsProcessed(noteId) {
     const processedNotes = await this.getProcessedNotes();
     processedNotes[noteId] = Date.now();
-    
+
     // Очищаем старые записи (старше 30 дней)
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
     Object.keys(processedNotes).forEach(id => {
@@ -99,7 +98,7 @@ export class StorageManager {
         delete processedNotes[id];
       }
     });
-    
+
     await chrome.storage.local.set({ processedNotes });
   }
 

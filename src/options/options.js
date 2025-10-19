@@ -1,7 +1,6 @@
 // Options Page Script
 import { StorageManager } from '../js/storage.js';
 import { GitLabAPI } from '../js/gitlab-api.js';
-import { TelegramAPI } from '../js/telegram-api.js';
 
 let currentSettings = {};
 let availableProjects = [];
@@ -12,7 +11,7 @@ let isGitLabTested = false; // Флаг успешного тестирован�
 const initOptions = async () => {
   currentSettings = await StorageManager.getSettings();
   loadSettingsToForm();
-  
+
   // Автоматически загружаем проекты, если настройки GitLab уже есть
   if (currentSettings.gitlabUrl && currentSettings.gitlabToken) {
     console.log('GitLab настроен, автоматически загружаем проекты');
@@ -25,7 +24,7 @@ const autoLoadProjects = async () => {
   try {
     const gitlabApi = new GitLabAPI(currentSettings.gitlabUrl, currentSettings.gitlabToken);
     availableProjects = await gitlabApi.getUserProjects();
-    
+
     if (availableProjects.length > 0) {
       currentSettings = await StorageManager.getSettings();
       renderProjects();
@@ -49,7 +48,7 @@ const loadSettingsToForm = () => {
   document.getElementById('notifyOwnComments').checked = !!currentSettings.notifyOwnComments;
   document.getElementById('showBrowserNotifications').checked = currentSettings.showBrowserNotifications !== false;
   document.getElementById('checkInterval').value = currentSettings.checkInterval || 2;
-  
+
   // Если GitLab уже настроен и есть username, считаем что тест пройден
   if (currentSettings.gitlabUrl && currentSettings.gitlabToken && gitlabUsername) {
     isGitLabTested = true;
@@ -60,7 +59,7 @@ const loadSettingsToForm = () => {
 // Обновление статуса успешного теста GitLab
 const updateGitLabTestStatus = (success) => {
   const loadProjectsBtn = document.getElementById('loadProjectsBtn');
-  
+
   if (success) {
     loadProjectsBtn.disabled = false;
     loadProjectsBtn.style.opacity = '1';
@@ -76,16 +75,16 @@ const handleSaveSettings = async () => {
     showAlert('error', '⚠️ Сначала проверьте подключение к GitLab');
     return;
   }
-  
+
   const btn = document.getElementById('saveBtn');
   const originalText = btn.innerHTML;
-  
+
   btn.disabled = true;
   btn.innerHTML = '⏳ Сохраняем...';
 
   try {
     const selectedProjects = getSelectedProjects();
-    
+
     const settings = {
       gitlabUrl: document.getElementById('gitlabUrl').value.trim(),
       gitlabToken: document.getElementById('gitlabToken').value.trim(),
@@ -102,15 +101,15 @@ const handleSaveSettings = async () => {
 
     await StorageManager.saveSettings(settings);
     currentSettings = await StorageManager.getSettings();
-    
+
     showAlert('success', '✓ Настройки сохранены');
     btn.innerHTML = '✓ Сохранено';
-    
+
     setTimeout(() => {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }, 2000);
-    
+
   } catch (error) {
     console.error('Ошибка сохранения:', error);
     showAlert('error', `✗ Ошибка сохранения: ${error.message}`);
@@ -129,7 +128,7 @@ const getSelectedProjects = () => {
 const handleTestGitLab = async () => {
   const btn = document.getElementById('testGitlabBtn');
   const originalText = btn.innerHTML;
-  
+
   btn.disabled = true;
   btn.innerHTML = '⏳ Проверяем...';
 
@@ -150,11 +149,11 @@ const handleTestGitLab = async () => {
     if (result.success) {
       showAlert('success', `✓ Подключение успешно! Пользователь: ${result.user.name} (@${result.user.username})`);
       btn.innerHTML = '✓ Успешно!';
-      
+
       // Сохраняем username в переменную
       gitlabUsername = result.user.username;
       isGitLabTested = true;
-      
+
       // Сохраняем GitLab настройки
       await StorageManager.saveSettings({
         gitlabUrl: url,
@@ -162,7 +161,7 @@ const handleTestGitLab = async () => {
         gitlabUsername: gitlabUsername
       });
       currentSettings = await StorageManager.getSettings();
-      
+
       // Активируем кнопку "Загрузить проекты"
       updateGitLabTestStatus(true);
     } else {
@@ -171,12 +170,12 @@ const handleTestGitLab = async () => {
       isGitLabTested = false;
       updateGitLabTestStatus(false);
     }
-    
+
     setTimeout(() => {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }, 2000);
-    
+
   } catch (error) {
     console.error('Ошибка тестирования GitLab:', error);
     showAlert('error', `✗ Ошибка: ${error.message}`);
@@ -191,10 +190,10 @@ const handleLoadProjects = async () => {
     showAlert('error', '⚠️ Сначала проверьте подключение к GitLab');
     return;
   }
-  
+
   const btn = document.getElementById('loadProjectsBtn');
   const originalText = btn.innerHTML;
-  
+
   btn.disabled = true;
   btn.innerHTML = '⏳ Загружаем...';
 
@@ -219,7 +218,7 @@ const handleLoadProjects = async () => {
       gitlabUsername: gitlabUsername
     });
     currentSettings = await StorageManager.getSettings();
-    
+
     if (availableProjects.length === 0) {
       showAlert('info', 'ℹ Проекты не найдены');
       document.getElementById('projectsList').innerHTML = '<div class="loading-projects">Проекты не найдены</div>';
@@ -233,7 +232,7 @@ const handleLoadProjects = async () => {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }, 2000);
-    
+
   } catch (error) {
     console.error('Ошибка загрузки проектов:', error);
     showAlert('error', `✗ Ошибка загрузки: ${error.message}`);
@@ -246,11 +245,11 @@ const handleLoadProjects = async () => {
 const renderProjects = () => {
   const projectsList = document.getElementById('projectsList');
   const selectedProjects = currentSettings.projects || [];
-  
+
   // Показываем поиск и статистику
   document.getElementById('projectsSearchContainer').classList.remove('hidden');
   document.getElementById('projectsStats').classList.remove('hidden');
-  
+
   // Группируем проекты по namespace
   const projectsByNamespace = {};
   availableProjects.forEach(project => {
@@ -260,44 +259,44 @@ const renderProjects = () => {
     }
     projectsByNamespace[namespace].push(project);
   });
-  
+
   // Сортируем namespace: сначала с выбранными проектами, потом остальные
   const sortedNamespaces = Object.keys(projectsByNamespace).sort((a, b) => {
     const hasSelectedA = projectsByNamespace[a].some(p => selectedProjects.includes(String(p.id)));
     const hasSelectedB = projectsByNamespace[b].some(p => selectedProjects.includes(String(p.id)));
-    
+
     // Если в одной группе есть выбранные, а в другой нет - группа с выбранными идет первой
     if (hasSelectedA && !hasSelectedB) return -1;
     if (!hasSelectedA && hasSelectedB) return 1;
-    
+
     // Если обе группы одинаковые по статусу выбора - сортируем по имени
     return a.localeCompare(b);
   });
-  
+
   // Генерируем HTML
   projectsList.innerHTML = sortedNamespaces.map(namespace => {
     const projects = projectsByNamespace[namespace];
     const namespaceId = namespace.replace(/\s+/g, '_').replace(/[^\w-]/g, '_');
-    
+
     // Считаем выбранные проекты в группе
-    const selectedInNamespace = projects.filter(p => 
+    const selectedInNamespace = projects.filter(p =>
       selectedProjects.includes(String(p.id))
     ).length;
     const hasSelected = selectedInNamespace > 0;
-    
+
     // Сортируем проекты: выбранные сверху, затем по имени
     const sortedProjects = projects.sort((a, b) => {
       const isSelectedA = selectedProjects.includes(String(a.id));
       const isSelectedB = selectedProjects.includes(String(b.id));
-      
+
       // Выбранные проекты идут первыми
       if (isSelectedA && !isSelectedB) return -1;
       if (!isSelectedA && isSelectedB) return 1;
-      
+
       // Если оба выбраны или оба не выбраны - сортируем по имени
       return a.name.localeCompare(b.name);
     });
-    
+
     return `
       <div class="namespace-group" data-namespace-id="${namespaceId}">
         <div class="namespace-header ${hasSelected ? 'has-selected' : ''}" data-namespace-id="${namespaceId}">
@@ -342,16 +341,16 @@ const renderProjects = () => {
       </div>
     `;
   }).join('');
-  
+
   // Обновляем статистику
   updateProjectStats();
-  
+
   // Добавляем поиск
   setupProjectsSearch();
-  
+
   // Добавляем обработчики кликов
   setupProjectsClickHandlers();
-  
+
   // Инициализируем состояние чекбоксов групп
   initializeNamespaceCheckboxes();
 };
@@ -363,7 +362,7 @@ const initializeNamespaceCheckboxes = () => {
     const projectCheckboxes = group.querySelectorAll('.project-checkbox');
     const checkedInGroup = group.querySelectorAll('.project-checkbox:checked').length;
     const totalInGroup = projectCheckboxes.length;
-    
+
     if (namespaceCheckbox) {
       if (checkedInGroup === 0) {
         namespaceCheckbox.checked = false;
@@ -388,15 +387,15 @@ const setupProjectsClickHandlers = () => {
       const namespaceId = checkbox.getAttribute('data-namespace-id');
       const group = document.querySelector(`.namespace-group[data-namespace-id="${namespaceId}"]`);
       const projectCheckboxes = group.querySelectorAll('.project-checkbox');
-      
+
       projectCheckboxes.forEach(projectCheckbox => {
         projectCheckbox.checked = checkbox.checked;
       });
-      
+
       updateProjectSelection();
     });
   });
-  
+
   // Обработчики для заголовков групп (сворачивание/разворачивание)
   document.querySelectorAll('.namespace-header').forEach(header => {
     header.addEventListener('click', (e) => {
@@ -404,18 +403,18 @@ const setupProjectsClickHandlers = () => {
       if (e.target.classList.contains('namespace-checkbox')) {
         return;
       }
-      
+
       const namespaceId = header.getAttribute('data-namespace-id');
       const projectsContainer = document.getElementById(`projects_${namespaceId}`);
       const toggle = document.getElementById(`toggle_${namespaceId}`);
-      
+
       if (projectsContainer && toggle) {
         projectsContainer.classList.toggle('collapsed');
         toggle.classList.toggle('collapsed');
       }
     });
   });
-  
+
   // Обработчики для проектов (выбор/отмена)
   document.querySelectorAll('.project-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -423,17 +422,17 @@ const setupProjectsClickHandlers = () => {
       if (e.target.classList.contains('project-checkbox')) {
         return;
       }
-      
+
       const projectId = item.getAttribute('data-project-id');
       const checkbox = document.getElementById(`project_${projectId}`);
-      
+
       if (checkbox) {
         checkbox.checked = !checkbox.checked;
         updateProjectSelection();
       }
     });
   });
-  
+
   // Обработчики для чекбоксов
   document.querySelectorAll('.project-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', () => {
@@ -461,22 +460,22 @@ const updateProjectSelection = () => {
 const updateNamespaceHeaders = () => {
   const projectsList = document.getElementById('projectsList');
   const groups = Array.from(projectsList.querySelectorAll('.namespace-group'));
-  
+
   // Обновляем заголовки и считаем выбранные
   groups.forEach(group => {
     const header = group.querySelector('.namespace-header');
     const selectedCount = group.querySelectorAll('.project-checkbox:checked').length;
-    
+
     // Сохраняем количество выбранных как data-атрибут для сортировки
     group.setAttribute('data-selected-count', selectedCount);
-    
+
     // Обновляем класс has-selected
     if (selectedCount > 0) {
       header.classList.add('has-selected');
     } else {
       header.classList.remove('has-selected');
     }
-    
+
     // Обновляем счетчик выбранных
     const existingBadge = header.querySelector('.namespace-selected');
     if (selectedCount > 0) {
@@ -492,13 +491,13 @@ const updateNamespaceHeaders = () => {
     } else if (existingBadge) {
       existingBadge.remove();
     }
-    
+
     // Обновляем чекбокс группы
     const namespaceCheckbox = group.querySelector('.namespace-checkbox');
     const projectCheckboxes = group.querySelectorAll('.project-checkbox');
     const checkedInGroup = group.querySelectorAll('.project-checkbox:checked').length;
     const totalInGroup = projectCheckboxes.length;
-    
+
     if (namespaceCheckbox) {
       if (checkedInGroup === 0) {
         namespaceCheckbox.checked = false;
@@ -511,40 +510,40 @@ const updateNamespaceHeaders = () => {
         namespaceCheckbox.indeterminate = true;
       }
     }
-    
+
     // Пересортировываем проекты внутри группы: выбранные сверху
     const projectsContainer = group.querySelector('.namespace-projects');
     const projectItems = Array.from(projectsContainer.querySelectorAll('.project-item'));
-    
+
     projectItems.sort((a, b) => {
       const isSelectedA = a.querySelector('.project-checkbox').checked;
       const isSelectedB = b.querySelector('.project-checkbox').checked;
-      
+
       // Выбранные проекты идут первыми
       if (isSelectedA && !isSelectedB) return -1;
       if (!isSelectedA && isSelectedB) return 1;
-      
+
       // Если оба выбраны или оба не выбраны - сохраняем порядок
       return 0;
     });
-    
+
     // Перестраиваем DOM проектов
     projectItems.forEach(item => projectsContainer.appendChild(item));
   });
-  
+
   // Пересортировываем группы: с выбранными наверх
   groups.sort((a, b) => {
     const hasSelectedA = parseInt(a.getAttribute('data-selected-count')) > 0;
     const hasSelectedB = parseInt(b.getAttribute('data-selected-count')) > 0;
-    
+
     // Если в одной группе есть выбранные, а в другой нет - группа с выбранными идет первой
     if (hasSelectedA && !hasSelectedB) return -1;
     if (!hasSelectedA && hasSelectedB) return 1;
-    
+
     // Если обе группы одинаковые - сохраняем текущий порядок
     return 0;
   });
-  
+
   // Перестраиваем DOM
   groups.forEach(group => projectsList.appendChild(group));
 };
@@ -553,7 +552,7 @@ const updateNamespaceHeaders = () => {
 const updateProjectStats = () => {
   const total = availableProjects.length;
   const selected = document.querySelectorAll('.project-checkbox:checked').length;
-  
+
   document.getElementById('totalProjects').textContent = total;
   document.getElementById('selectedProjects').textContent = selected;
 };
@@ -561,18 +560,18 @@ const updateProjectStats = () => {
 // Настройка поиска проектов
 const setupProjectsSearch = () => {
   const searchInput = document.getElementById('projectsSearch');
-  
+
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
     const projects = document.querySelectorAll('.project-item');
     const namespaces = document.querySelectorAll('.namespace-group');
-    
+
     projects.forEach(project => {
       const name = project.querySelector('.project-name').textContent.toLowerCase();
       const matches = name.includes(query);
       project.style.display = matches ? 'flex' : 'none';
     });
-    
+
     // Скрываем пустые namespace
     namespaces.forEach(namespace => {
       const visibleProjects = namespace.querySelectorAll('.project-item[style="display: flex;"], .project-item:not([style])');
@@ -586,7 +585,7 @@ const setupProjectsSearch = () => {
 const handleTestTelegram = async () => {
   const btn = document.getElementById('testTelegramBtn');
   const originalText = btn.innerHTML;
-  
+
   btn.disabled = true;
   btn.innerHTML = '⏳ Проверяем...';
 
@@ -614,12 +613,12 @@ const handleTestTelegram = async () => {
       showAlert('error', `✗ Ошибка: ${result.error}`);
       btn.innerHTML = '✗ Ошибка';
     }
-    
+
     setTimeout(() => {
       btn.innerHTML = originalText;
       btn.disabled = false;
     }, 2000);
-    
+
   } catch (error) {
     console.error('Ошибка тестирования Telegram:', error);
     showAlert('error', `✗ Ошибка: ${error.message}`);
@@ -671,7 +670,7 @@ const showAlert = (type, message) => {
 const togglePasswordVisibility = (inputId, buttonId) => {
   const input = document.getElementById(inputId);
   const button = document.getElementById(buttonId);
-  
+
   if (input.type === 'password') {
     input.type = 'text';
     button.innerHTML = '🔓';
@@ -687,37 +686,37 @@ const togglePasswordVisibility = (inputId, buttonId) => {
 // Проверка причастности к одному проекту
 const checkProjectRelation = async (project, username, gitlabApi) => {
   // Проверяем базовые признаки причастности (быстро, без API запросов)
-  const hasBasicAccess = 
+  const hasBasicAccess =
     project.owner?.username === username ||
     project.namespace?.owner?.username === username ||
     project.permissions?.project_access?.access_level > 0 ||
     project.permissions?.group_access?.access_level > 0 ||
     project.creator_id === username;
-  
+
   if (hasBasicAccess) {
     return true;
   }
-  
+
   // Проверяем наличие открытых MR, где пользователь участвует
   try {
     const mergeRequests = await gitlabApi.getMergeRequests(project.id, 'opened');
-    
+
     // Проверяем только первые 20 MR для ускорения
     const mrsToCheck = mergeRequests.slice(0, 20);
-    
+
     for (const mr of mrsToCheck) {
       // Сначала проверяем базовые роли (без дополнительных запросов)
-      const isRelatedToMR = 
+      const isRelatedToMR =
         mr.author?.username === username ||
         mr.assignee?.username === username ||
         mr.assignees?.some(a => a.username === username) ||
         mr.reviewers?.some(r => r.username === username);
-      
+
       if (isRelatedToMR) {
         return true;
       }
     }
-    
+
     // Проверяем participants только у первых 5 MR (это медленно)
     for (const mr of mrsToCheck.slice(0, 5)) {
       try {
@@ -732,7 +731,7 @@ const checkProjectRelation = async (project, username, gitlabApi) => {
   } catch (error) {
     // Игнорируем ошибки получения MR
   }
-  
+
   return false;
 };
 
@@ -742,64 +741,64 @@ const handleAutoSelectMyProjects = async () => {
     showAlert('error', '✗ Сначала загрузите проекты');
     return;
   }
-  
+
   // Используем username из переменной памяти
   if (!gitlabUsername) {
     showAlert('error', '✗ Сначала проверьте подключение к GitLab');
     return;
   }
-  
+
   const username = gitlabUsername;
-  
+
   const btn = document.getElementById('autoSelectMyProjectsBtn');
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '⏳ Проверка проектов...';
-  
+
   try {
     // Берем URL и токен из полей ввода или сохраненных настроек
     const gitlabUrl = document.getElementById('gitlabUrl').value.trim() || currentSettings.gitlabUrl;
     const gitlabToken = document.getElementById('gitlabToken').value.trim() || currentSettings.gitlabToken;
-    
+
     if (!gitlabUrl || !gitlabToken) {
       showAlert('error', '✗ Укажите GitLab URL и токен');
       btn.disabled = false;
       btn.innerHTML = originalText;
       return;
     }
-    
+
     const gitlabApi = new GitLabAPI(gitlabUrl, gitlabToken);
     let selectedCount = 0;
-    
+
     showAlert('info', `🔍 Проверка ${availableProjects.length} проектов (параллельно)...`);
-    
+
     // Фильтруем только непроверенные проекты
     const projectsToCheck = availableProjects.filter(project => {
       const checkbox = document.getElementById(`project_${project.id}`);
       return checkbox && !checkbox.checked;
     });
-    
+
     // Обрабатываем проекты пакетами по 10 одновременно (для ускорения)
     const batchSize = 10;
     const batches = [];
-    
+
     for (let i = 0; i < projectsToCheck.length; i += batchSize) {
       batches.push(projectsToCheck.slice(i, i + batchSize));
     }
-    
+
     let processed = 0;
-    
+
     for (const batch of batches) {
       // Проверяем проекты в пакете параллельно
       const results = await Promise.allSettled(
         batch.map(project => checkProjectRelation(project, username, gitlabApi))
       );
-      
+
       // Обрабатываем результаты
       results.forEach((result, index) => {
         processed++;
         btn.innerHTML = `⏳ ${processed}/${projectsToCheck.length}`;
-        
+
         if (result.status === 'fulfilled' && result.value === true) {
           const project = batch[index];
           const checkbox = document.getElementById(`project_${project.id}`);
@@ -809,13 +808,13 @@ const handleAutoSelectMyProjects = async () => {
           }
         }
       });
-      
+
       // Обновляем UI после каждого пакета
       updateProjectSelection();
     }
-    
+
     showAlert('success', `✓ Автоматически выбрано проектов: ${selectedCount} из ${availableProjects.length}`);
-    
+
   } catch (error) {
     console.error('Ошибка автовыбора:', error);
     showAlert('error', `✗ Ошибка автовыбора: ${error.message}`);
