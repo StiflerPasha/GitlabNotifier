@@ -131,11 +131,6 @@ const checkGitLabActivity = async () => {
     logger.log('Проверяем доступность GitLab...');
     const availability = await gitlabApi.checkAvailability();
     
-    // Обновляем время последней проверки независимо от результата
-    const checkTime = new Date();
-    await StorageManager.setLastCheckTime('mrComments', checkTime);
-    await StorageManager.setLastCheckTime('pipelines', checkTime);
-    
     if (!availability.available) {
       logger.error('❌ GitLab недоступен:', availability.error);
       await StorageManager.setConnectionStatus(false, availability.error);
@@ -269,8 +264,12 @@ const checkMRComments = async (gitlabApi, telegramApi, settings) => {
     
     console.log(`MR: проверено ${totalMRsChecked}, релевантных ${relevantMRsCount}`);
     
+    // Обновляем время последней проверки только после успешной проверки
+    await StorageManager.setLastCheckTime('mrComments', new Date());
+    
   } catch (error) {
     console.error('Ошибка при проверке комментариев MR:', error);
+    // При ошибке НЕ обновляем lastCheck, чтобы не потерять комментарии
   }
 };
 
@@ -353,8 +352,12 @@ const checkPipelines = async (gitlabApi, telegramApi, settings) => {
     
     console.log(`Pipelines: проверено ${totalPipelinesChecked} с финальными статусами (success/failed/canceled), релевантных ${relevantPipelinesCount}`);
     
+    // Обновляем время последней проверки только после успешной проверки
+    await StorageManager.setLastCheckTime('pipelines', new Date());
+    
   } catch (error) {
     console.error('Ошибка при проверке пайплайнов:', error);
+    // При ошибке НЕ обновляем lastCheck, чтобы не потерять события
   }
 };
 
