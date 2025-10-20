@@ -4,6 +4,31 @@ import { TelegramAPI } from './js/telegram-api.js';
 import { StorageManager } from './js/storage.js';
 import { logger } from './js/config.js';
 
+// Получение названия проекта (из кэша в storage)
+const getProjectName = async (gitlabApi, projectId) => {
+  // Проверяем кэш в storage
+  const cachedName = await StorageManager.getProjectName(projectId);
+  if (cachedName) {
+    return cachedName;
+  }
+  
+  // Запрашиваем у API, если нет в кэше
+  try {
+    const project = await gitlabApi.getProject(projectId);
+    if (project) {
+      const projectName = project.path_with_namespace || project.name_with_namespace  || projectId;
+      // Сохраняем в кэш
+      await StorageManager.setProjectName(projectId, projectName);
+      return projectName;
+    }
+  } catch (error) {
+    console.error(`Ошибка получения названия проекта ${projectId}:`, error);
+  }
+  
+  // Возвращаем ID если не удалось получить название
+  return `Project ${projectId}`;
+};
+
 // Инициализация при установке расширения
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('GitLab Notifier установлен');
@@ -273,11 +298,6 @@ const checkMRComments = async (gitlabApi, telegramApi, settings) => {
   }
 };
 
-// Проверка, связан ли пользователь с Pipeline
-const isUserRelatedToPipeline = (pipeline, username) => {
-  return !username || pipeline.user?.username === username;
-};
-
 // Проверка статусов пайплайнов
 const checkPipelines = async (gitlabApi, telegramApi, settings) => {
   try {
@@ -296,13 +316,14 @@ const checkPipelines = async (gitlabApi, telegramApi, settings) => {
     
     for (const projectId of projects) {
       // Получаем последние пайплайны
-      const pipelines = await gitlabApi.getPipelines(projectId);
+      // Если username указан - GitLab API отфильтрует только паплайны этого пользователя
+      // Если username не указан - получим все паплайны
+      const pipelines = await gitlabApi.getPipelines(projectId, 20, username);
       
-      // Фильтруем пайплайны: только финальные статусы и изменившиеся после последней проверки
+      // Фильтруем пайплайны: все, которые обновлялись после последней проверки (любой статус!)
       const recentPipelines = pipelines.filter(pipeline => {
         const updatedDate = new Date(pipeline.updated_at);
-        const isFinalStatus = finalStatuses.includes(pipeline.status);
-        return updatedDate > lastCheck && isFinalStatus;
+        return updatedDate > lastCheck;
       });
       
       totalPipelinesChecked += recentPipelines.length;
@@ -311,19 +332,22 @@ const checkPipelines = async (gitlabApi, telegramApi, settings) => {
       const savedStatuses = await StorageManager.getPipelineStatuses();
       
       for (const pipeline of recentPipelines) {
-        if (!isUserRelatedToPipeline(pipeline, username)) continue;
-        
         relevantPipelinesCount++;
         const pipelineKey = `${projectId}_${pipeline.id}`;
         const savedStatus = savedStatuses[pipelineKey];
         
-        // Уведомление только при изменении статуса на финальный
-        // (не уведомляем, если пайплайн сразу создался с финальным статусом)
-        if (savedStatus && savedStatus !== pipeline.status) {
-          console.log(`Pipeline #${pipeline.id}: статус изменился ${savedStatus} → ${pipeline.status}`);
+        // Уведомление только при изменении статуса на финальный (success/failed/canceled)
+        const isStatusChanged = savedStatus && savedStatus !== pipeline.status;
+        const isNewStatusFinal = finalStatuses.includes(pipeline.status);
+        
+        if (isStatusChanged && isNewStatusFinal) {
+          console.log(`Pipeline #${pipeline.id}: ${savedStatus} → ${pipeline.status}`);
+          
+          // Получаем название проекта
+          const projectName = await getProjectName(gitlabApi, projectId);
           
           await telegramApi.sendMessage(
-            formatPipelineMessage(pipeline, settings.gitlabUrl, projectId)
+            formatPipelineMessage(pipeline, settings.gitlabUrl, projectId, projectName)
           );
           
           if (settings.showBrowserNotifications) {
@@ -350,7 +374,7 @@ const checkPipelines = async (gitlabApi, telegramApi, settings) => {
       await StorageManager.setPipelineStatuses(savedStatuses);
     }
     
-    console.log(`Pipelines: проверено ${totalPipelinesChecked} с финальными статусами (success/failed/canceled), релевантных ${relevantPipelinesCount}`);
+    console.log(`Pipelines: проверено ${totalPipelinesChecked}, релевантных ${relevantPipelinesCount}`);
     
     // Обновляем время последней проверки только после успешной проверки
     await StorageManager.setLastCheckTime('pipelines', new Date());
@@ -409,7 +433,7 @@ ${statusEmoji} <b>MR:</b> <a href="${mrUrl}">!${mr.iid} ${mr.title}</a>
 };
 
 // Форматирование сообщения о пайплайне
-const formatPipelineMessage = (pipeline, gitlabUrl, projectId) => {
+const formatPipelineMessage = (pipeline, gitlabUrl, projectId, projectName = null) => {
   // Используем web_url из объекта Pipeline
   const pipelineUrl = pipeline.web_url || `${gitlabUrl}/-/pipelines/${pipeline.id}`;
   
@@ -444,10 +468,13 @@ const formatPipelineMessage = (pipeline, gitlabUrl, projectId) => {
     'trigger': '⚡'
   }[source] || '📋';
   
+  // Используем название проекта или ID
+  const projectDisplay = projectName || `ID ${projectId}`;
+  
   return `
 ${statusInfo.emoji} <b>Pipeline: ${statusInfo.text}</b>
 
-📁 <b>Проект:</b> <code>ID ${projectId}</code>
+📁 <b>Проект:</b> <code>${projectDisplay}</code>
 🔢 <b>Pipeline:</b> <a href="${pipelineUrl}">#${pipeline.id}</a>
 🌿 <b>Ветка:</b> <code>${pipeline.ref}</code>
 💾 <b>Коммит:</b> <code>${pipeline.sha?.substring(0, 8) || 'N/A'}</code>

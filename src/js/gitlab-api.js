@@ -58,7 +58,7 @@ export class GitLabAPI {
   // Получение комментариев (notes) к MR
   async getMRNotes(projectId, mergeRequestIid) {
     try {
-      const endpoint = `/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/notes?order_by=created_at&sort=desc&per_page=50`;
+      const endpoint = `/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/notes?order_by=created_at&sort=desc&per_page=50&system=false`;
       return await this.makeRequest(endpoint);
     } catch (error) {
       console.error('Ошибка получения комментариев MR:', error);
@@ -67,9 +67,15 @@ export class GitLabAPI {
   }
 
   // Получение списка пайплайнов
-  async getPipelines(projectId, perPage = 20) {
+  async getPipelines(projectId, perPage = 20, username = null) {
     try {
-      const endpoint = `/projects/${encodeURIComponent(projectId)}/pipelines?order_by=updated_at&sort=desc&per_page=${perPage}`;
+      let endpoint = `/projects/${encodeURIComponent(projectId)}/pipelines?order_by=updated_at&sort=desc&per_page=${perPage}`;
+      
+      // Фильтр по username (если указан)
+      if (username) {
+        endpoint += `&username=${encodeURIComponent(username)}`;
+      }
+      
       return await this.makeRequest(endpoint);
     } catch (error) {
       // Ошибка 403 обычно означает недостаточно прав для доступа к пайплайнам
@@ -141,6 +147,17 @@ export class GitLabAPI {
     } catch (error) {
       console.error('Ошибка получения проектов:', error);
       return [];
+    }
+  }
+
+  // Получение информации о проекте
+  async getProject(projectId) {
+    try {
+      const endpoint = `/projects/${encodeURIComponent(projectId)}`;
+      return await this.makeRequest(endpoint);
+    } catch (error) {
+      console.error('Ошибка получения информации о проекте:', error);
+      return null;
     }
   }
 }

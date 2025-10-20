@@ -141,6 +141,30 @@ export class StorageManager {
     console.log(`✓ Статус подключения обновлен: ${available ? 'доступен' : 'недоступен'}`, error || '');
   }
 
+  // Получение кэша названий проектов
+  static async getProjectNamesCache() {
+    const data = await chrome.storage.local.get('projectNamesCache');
+    return data.projectNamesCache || {};
+  }
+
+  // Сохранение кэша названий проектов
+  static async setProjectNamesCache(cache) {
+    await chrome.storage.local.set({ projectNamesCache: cache });
+  }
+
+  // Получение названия одного проекта из кэша
+  static async getProjectName(projectId) {
+    const cache = await this.getProjectNamesCache();
+    return cache[projectId] || null;
+  }
+
+  // Сохранение названия одного проекта в кэш
+  static async setProjectName(projectId, projectName) {
+    const cache = await this.getProjectNamesCache();
+    cache[projectId] = projectName;
+    await this.setProjectNamesCache(cache);
+  }
+
   // Очистка всех данных
   static async clear() {
     await chrome.storage.local.clear();

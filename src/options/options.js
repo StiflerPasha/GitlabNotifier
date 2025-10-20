@@ -26,6 +26,14 @@ const autoLoadProjects = async () => {
     availableProjects = await gitlabApi.getUserProjects();
 
     if (availableProjects.length > 0) {
+      // Заполняем кэш названий проектов
+      const cache = {};
+      availableProjects.forEach(project => {
+        cache[project.id] = project.path_with_namespace || project.name_with_namespace || `Project ${project.id}`;
+      });
+      await StorageManager.setProjectNamesCache(cache);
+      console.log(`✅ Кэш названий автоматически заполнен для ${availableProjects.length} проектов`);
+      
       currentSettings = await StorageManager.getSettings();
       renderProjects();
       document.getElementById('projectsSearchContainer').style.display = 'block';
@@ -223,6 +231,14 @@ const handleLoadProjects = async () => {
       showAlert('info', 'ℹ Проекты не найдены');
       document.getElementById('projectsList').innerHTML = '<div class="loading-projects">Проекты не найдены</div>';
     } else {
+      // Заполняем кэш названий проектов сразу после загрузки
+      const cache = {};
+      availableProjects.forEach(project => {
+        cache[project.id] = project.path_with_namespace || project.name_with_namespace || `Project ${project.id}`;
+      });
+      await StorageManager.setProjectNamesCache(cache);
+      console.log(`✅ Кэш названий заполнен для ${availableProjects.length} проектов`);
+      
       renderProjects();
       showAlert('success', `✓ Загружено ${availableProjects.length} проектов`);
     }
