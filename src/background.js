@@ -11,12 +11,12 @@ const getProjectName = async (gitlabApi, projectId) => {
   if (cachedName) {
     return cachedName;
   }
-  
+
   // Запрашиваем у API, если нет в кэше
   try {
     const project = await gitlabApi.getProject(projectId);
     if (project) {
-      const projectName = project.path_with_namespace || project.name_with_namespace  || projectId;
+      const projectName = project.path_with_namespace || project.name_with_namespace || projectId;
       // Сохраняем в кэш
       await StorageManager.setProjectName(projectId, projectName);
       return projectName;
@@ -24,7 +24,7 @@ const getProjectName = async (gitlabApi, projectId) => {
   } catch (error) {
     console.error(`Ошибка получения названия проекта ${projectId}:`, error);
   }
-  
+
   // Возвращаем ID если не удалось получить название
   return `Project ${projectId}`;
 };
@@ -32,16 +32,16 @@ const getProjectName = async (gitlabApi, projectId) => {
 // Инициализация при установке расширения
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('GitLab Notifier установлен');
-  
+
   // Инициализируем storage
   await StorageManager.initialize();
-  
+
   // Создаем alarm для периодической проверки
   await setupAlarm();
-  
+
   // Инициализируем badge
   await updateBadge();
-  
+
   // Миграция для предотвращения уведомлений о старых комментариях
   // Работает как при первой установке, так и при обновлении
   if (details.reason === 'install' || details.reason === 'update') {
@@ -59,16 +59,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 const setupAlarm = async () => {
   const settings = await StorageManager.getSettings();
   const intervalMinutes = settings.checkInterval || 2;
-  
+
   // Удаляем старый alarm
   await chrome.alarms.clear('checkGitLab');
-  
+
   // Создаем новый с актуальным интервалом и немедленным первым запуском
   chrome.alarms.create('checkGitLab', {
     delayInMinutes: 0.1, // Первый запуск через 6 секунд
-    periodInMinutes: intervalMinutes
+    periodInMinutes: intervalMinutes,
   });
-  
+
   console.log(`Alarm настроен на ${intervalMinutes} минут с немедленным первым запуском`);
 };
 
@@ -89,7 +89,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
     console.log(`Интервал изменен на ${changes.checkInterval.newValue} минут`);
     await setupAlarm();
   }
-  
+
   // Обновляем badge при изменении счетчика
   if (namespace === 'local' && changes.unreadCount) {
     await updateBadge();
@@ -107,7 +107,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // Проверяем alarm при старте service worker
 chrome.runtime.onStartup.addListener(async () => {
   console.log('Service Worker запущен');
-  
+
   // Проверяем, существует ли alarm
   const alarm = await chrome.alarms.get('checkGitLab');
   if (!alarm) {
@@ -116,10 +116,10 @@ chrome.runtime.onStartup.addListener(async () => {
   } else {
     console.log(`Alarm найден, интервал: ${alarm.periodInMinutes} минут`);
   }
-  
+
   // Обновляем badge
   await updateBadge();
-  
+
   // Запускаем немедленную проверку при старте браузера
   console.log('Запускаем немедленную проверку при старте браузера');
   await checkGitLabActivity();
@@ -129,60 +129,60 @@ chrome.runtime.onStartup.addListener(async () => {
 const checkGitLabActivity = async () => {
   const startTime = new Date();
   logger.log('=== Начало проверки GitLab ===', startTime.toLocaleString('ru-RU'));
-  
+
   try {
     const settings = await StorageManager.getSettings();
-    
+
     if (!settings.gitlabUrl || !settings.gitlabToken) {
       logger.info('GitLab не настроен');
       return;
     }
-    
+
     if (!settings.telegramBotToken || !settings.telegramChatId) {
       logger.info('Telegram не настроен');
       return;
     }
-    
+
     if (!settings.enabled) {
       logger.info('Уведомления отключены');
       return;
     }
-    
+
     logger.log(`Настройки: MR комментарии=${settings.notifyMRComments}, Пайплайны=${settings.notifyPipelines}, Проектов=${settings.projects?.length || 0}`);
-    
+
     const gitlabApi = new GitLabAPI(settings.gitlabUrl, settings.gitlabToken);
-    
+
     // Проверяем доступность GitLab (VPN)
     logger.log('Проверяем доступность GitLab...');
     const availability = await gitlabApi.checkAvailability();
-    
+
     if (!availability.available) {
       logger.error('❌ GitLab недоступен:', availability.error);
       await StorageManager.setConnectionStatus(false, availability.error);
       return;
     }
-    
+
     logger.log('✅ GitLab доступен');
     await StorageManager.setConnectionStatus(true, null);
-    
+
     const telegramApi = new TelegramAPI(settings.telegramBotToken, settings.telegramChatId);
-    
+
     // Проверяем комментарии в MR
     if (settings.notifyMRComments) {
       logger.log('Проверяем комментарии в MR...');
       await checkMRComments(gitlabApi, telegramApi, settings);
     }
-    
+
     // Проверяем пайплайны
     if (settings.notifyPipelines) {
       logger.log('Проверяем пайплайны...');
       await checkPipelines(gitlabApi, telegramApi, settings);
     }
-    
+
     const endTime = new Date();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
     logger.log(`=== Проверка GitLab завершена за ${duration}с ===`, endTime.toLocaleString('ru-RU'));
-    
+
   } catch (error) {
     logger.error('Ошибка при проверке GitLab:', error);
     await StorageManager.setConnectionStatus(false, error.message);
@@ -192,13 +192,13 @@ const checkGitLabActivity = async () => {
 // Проверка, связан ли пользователь с MR (быстрая проверка)
 const isUserRelatedToMRBasic = (mr, username) => {
   if (!username) return 'yes';
-  
+
   // Проверяем основные роли
   if (mr.author?.username === username) return 'yes';
   if (mr.assignee?.username === username) return 'yes';
   if (mr.assignees?.some(a => a.username === username)) return 'yes';
   if (mr.reviewers?.some(r => r.username === username)) return 'yes';
-  
+
   // Нужна проверка participants через API
   return 'unknown';
 };
@@ -213,27 +213,27 @@ const checkMRComments = async (gitlabApi, telegramApi, settings) => {
     const lastCheck = new Date(lastChecks.mrComments || 0);
     const projects = settings.projects || [];
     const username = settings.gitlabUsername;
-    
+
     if (projects.length === 0) {
       console.log('Нет настроенных проектов');
       return;
     }
-    
+
     let hasNewComments = false;
     let totalMRsChecked = 0;
     let relevantMRsCount = 0;
-    
+
     for (const projectId of projects) {
       // Получаем открытые MR
       const mergeRequests = await gitlabApi.getMergeRequests(projectId, 'opened');
       totalMRsChecked += mergeRequests.length;
-      
+
       for (const mr of mergeRequests) {
         // Быстрая проверка основных ролей
         const basicCheck = isUserRelatedToMRBasic(mr, username);
-        
+
         let isRelated = basicCheck === 'yes';
-        
+
         // Если не найден в основных ролях, проверяем participants
         if (!isRelated && basicCheck === 'unknown') {
           try {
@@ -243,40 +243,41 @@ const checkMRComments = async (gitlabApi, telegramApi, settings) => {
             console.error(`Ошибка проверки participants для MR !${mr.iid}:`, error);
           }
         }
-        
+
         if (!isRelated) continue;
-        
+
         relevantMRsCount++;
-        
+
         // Получаем комментарии к MR
         const notes = await gitlabApi.getMRNotes(projectId, mr.iid);
-        
+
         // Обрабатываем новые комментарии
         for (const note of notes) {
           const noteDate = new Date(note.created_at);
           const now = new Date();
           const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-          
+
           // Фильтрация
+          if (note.system) continue; // Игнорируем системные комментарии
           if (noteDate <= lastCheck) continue;
           if (noteDate < sevenDaysAgo) continue; // Игнорируем комментарии старше 7 дней
           if (!settings.notifyOwnComments && note.author.username === settings.gitlabUsername) continue;
           if (await StorageManager.isNoteProcessed(note.id)) continue;
-          
+
           // Отправка уведомления
           try {
             const message = formatMRCommentMessage(mr, note, settings.gitlabUrl, projectId);
             await telegramApi.sendMessage(message);
-            
+
             if (settings.showBrowserNotifications) {
               chrome.notifications.create({
                 type: 'basic',
                 iconUrl: '../assets/icons/icon.png',
                 title: 'Новый комментарий в MR',
-                message: `${note.author.name}: ${note.body.substring(0, 100)}...`
+                message: `${note.author.name}: ${note.body.substring(0, 100)}...`,
               });
             }
-            
+
             await StorageManager.markNoteAsProcessed(note.id);
             await StorageManager.incrementUnreadCount();
             hasNewComments = true;
@@ -286,12 +287,12 @@ const checkMRComments = async (gitlabApi, telegramApi, settings) => {
         }
       }
     }
-    
+
     console.log(`MR: проверено ${totalMRsChecked}, релевантных ${relevantMRsCount}`);
-    
+
     // Обновляем время последней проверки только после успешной проверки
     await StorageManager.setLastCheckTime('mrComments', new Date());
-    
+
   } catch (error) {
     console.error('Ошибка при проверке комментариев MR:', error);
     // При ошибке НЕ обновляем lastCheck, чтобы не потерять комментарии
@@ -307,78 +308,78 @@ const checkPipelines = async (gitlabApi, telegramApi, settings) => {
     const lastCheck = new Date(lastChecks.pipelines || 0);
     const projects = settings.projects || [];
     const username = settings.gitlabUsername;
-    
+
     // Финальные статусы пайплайнов, о которых нужно уведомлять
     const finalStatuses = ['success', 'failed', 'canceled'];
-    
+
     let totalPipelinesChecked = 0;
     let relevantPipelinesCount = 0;
-    
+
     for (const projectId of projects) {
       // Получаем последние пайплайны
       // Если username указан - GitLab API отфильтрует только паплайны этого пользователя
       // Если username не указан - получим все паплайны
       const pipelines = await gitlabApi.getPipelines(projectId, 20, username);
-      
+
       // Фильтруем пайплайны: все, которые обновлялись после последней проверки (любой статус!)
       const recentPipelines = pipelines.filter(pipeline => {
         const updatedDate = new Date(pipeline.updated_at);
         return updatedDate > lastCheck;
       });
-      
+
       totalPipelinesChecked += recentPipelines.length;
-      
+
       // Получаем сохраненные статусы пайплайнов
       const savedStatuses = await StorageManager.getPipelineStatuses();
-      
+
       for (const pipeline of recentPipelines) {
         relevantPipelinesCount++;
         const pipelineKey = `${projectId}_${pipeline.id}`;
         const savedStatus = savedStatuses[pipelineKey];
-        
+
         // Уведомление только при изменении статуса на финальный (success/failed/canceled)
         const isStatusChanged = savedStatus && savedStatus !== pipeline.status;
         const isNewStatusFinal = finalStatuses.includes(pipeline.status);
-        
+
         if (isStatusChanged && isNewStatusFinal) {
           console.log(`Pipeline #${pipeline.id}: ${savedStatus} → ${pipeline.status}`);
-          
+
           // Получаем название проекта
           const projectName = await getProjectName(gitlabApi, projectId);
-          
+
           await telegramApi.sendMessage(
-            formatPipelineMessage(pipeline, settings.gitlabUrl, projectId, projectName)
+            formatPipelineMessage(pipeline, settings.gitlabUrl, projectId, projectName),
           );
-          
+
           if (settings.showBrowserNotifications) {
             const statusTitles = {
               'success': '✅ Pipeline успешен',
               'failed': '❌ Pipeline провален',
-              'canceled': '🚫 Pipeline отменён'
+              'canceled': '🚫 Pipeline отменён',
             };
             chrome.notifications.create({
               type: 'basic',
               iconUrl: '../assets/icons/icon.png',
               title: statusTitles[pipeline.status] || `Pipeline: ${pipeline.status}`,
-              message: `Проект: ${projectId}\nВетка: ${pipeline.ref}`
+              message: `Проект: ${projectId}\nВетка: ${pipeline.ref}`,
             });
           }
-          
+
           await StorageManager.incrementUnreadCount();
         }
-        
+
         // Сохраняем статус для отслеживания изменений
         savedStatuses[pipelineKey] = pipeline.status;
       }
-      
+
       await StorageManager.setPipelineStatuses(savedStatuses);
     }
-    
+
     console.log(`Pipelines: проверено ${totalPipelinesChecked}, релевантных ${relevantPipelinesCount}`);
-    
+
     // Обновляем время последней проверки только после успешной проверки
     await StorageManager.setLastCheckTime('pipelines', new Date());
-    
+
   } catch (error) {
     console.error('Ошибка при проверке пайплайнов:', error);
     // При ошибке НЕ обновляем lastCheck, чтобы не потерять события
@@ -390,32 +391,32 @@ const formatMRCommentMessage = (mr, note, gitlabUrl, projectId) => {
   // Используем web_url из объекта MR или строим корректный URL через path_with_namespace
   const mrUrl = mr.web_url || `${gitlabUrl}/${mr.references?.full || ''}/-/merge_requests/${mr.iid}`;
   const commentUrl = `${mrUrl}#note_${note.id}`;
-  
+
   // Определяем эмодзи статуса MR
   const statusEmoji = {
     'opened': '🟢',
     'merged': '🟣',
-    'closed': '🔴'
+    'closed': '🔴',
   }[mr.state] || '⚪';
-  
+
   // Форматируем дату комментария
   const commentDate = new Date(note.created_at);
-  const timeStr = commentDate.toLocaleString('ru-RU', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const timeStr = commentDate.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
-  
+
   // Обрезаем комментарий и добавляем многоточие
   let commentText = note.body.trim();
   if (commentText.length > 300) {
     commentText = commentText.substring(0, 300) + '...';
   }
-  
+
   // Получаем название проекта
   const projectName = mr.references?.full?.split('!')[0]?.trim() || `Project ${projectId}`;
-  
+
   return `
 💬 <b>Новый комментарий в Merge Request</b>
 
@@ -436,7 +437,7 @@ ${statusEmoji} <b>MR:</b> <a href="${mrUrl}">!${mr.iid} ${mr.title}</a>
 const formatPipelineMessage = (pipeline, gitlabUrl, projectId, projectName = null) => {
   // Используем web_url из объекта Pipeline
   const pipelineUrl = pipeline.web_url || `${gitlabUrl}/-/pipelines/${pipeline.id}`;
-  
+
   // Определяем эмодзи и текст статуса
   const statusInfo = {
     'success': { emoji: '✅', text: 'УСПЕШНО', color: '🟢' },
@@ -445,18 +446,18 @@ const formatPipelineMessage = (pipeline, gitlabUrl, projectId, projectName = nul
     'pending': { emoji: '⏳', text: 'ОЖИДАЕТ', color: '🟡' },
     'canceled': { emoji: '🚫', text: 'ОТМЕНЁН', color: '⚫' },
     'skipped': { emoji: '⏭️', text: 'ПРОПУЩЕН', color: '⚪' },
-    'manual': { emoji: '👆', text: 'РУЧНОЙ ЗАПУСК', color: '🟠' }
+    'manual': { emoji: '👆', text: 'РУЧНОЙ ЗАПУСК', color: '🟠' },
   }[pipeline.status] || { emoji: '📊', text: pipeline.status.toUpperCase(), color: '⚪' };
-  
+
   // Форматируем дату
   const pipelineDate = new Date(pipeline.updated_at);
-  const timeStr = pipelineDate.toLocaleString('ru-RU', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const timeStr = pipelineDate.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
-  
+
   // Определяем источник
   const source = pipeline.source || 'unknown';
   const sourceEmoji = {
@@ -465,12 +466,12 @@ const formatPipelineMessage = (pipeline, gitlabUrl, projectId, projectName = nul
     'schedule': '⏰',
     'api': '🔧',
     'merge_request_event': '🔀',
-    'trigger': '⚡'
+    'trigger': '⚡',
   }[source] || '📋';
-  
+
   // Используем название проекта или ID
   const projectDisplay = projectName || `ID ${projectId}`;
-  
+
   return `
 ${statusInfo.emoji} <b>Pipeline: ${statusInfo.text}</b>
 
@@ -496,7 +497,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // Асинхронный ответ
   }
-  
+
   if (message.action === 'testTelegram') {
     testTelegramConnection(message.botToken, message.chatId).then((result) => {
       sendResponse(result);

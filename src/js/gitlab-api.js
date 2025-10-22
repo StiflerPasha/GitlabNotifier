@@ -9,7 +9,7 @@ export class GitLabAPI {
   // Выполнение запроса к GitLab API
   async makeRequest(endpoint, options = {}) {
     const url = `${this.apiUrl}${endpoint}`;
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -30,19 +30,19 @@ export class GitLabAPI {
   async getMergeRequests(projectId, state = 'opened', scope = null) {
     try {
       let endpoint = `/projects/${encodeURIComponent(projectId)}/merge_requests?state=${state}&order_by=updated_at&sort=desc&per_page=20`;
-      
+
       // Добавляем scope если указан (created_by_me, assigned_to_me, all)
       if (scope) {
         endpoint += `&scope=${scope}`;
       }
-      
+
       return await this.makeRequest(endpoint);
     } catch (error) {
       console.error('Ошибка получения MR:', error);
       return [];
     }
   }
-  
+
   // Получение participants MR
   async getMRParticipants(projectId, mergeRequestIid) {
     try {
@@ -58,7 +58,7 @@ export class GitLabAPI {
   // Получение комментариев (notes) к MR
   async getMRNotes(projectId, mergeRequestIid) {
     try {
-      const endpoint = `/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/notes?order_by=created_at&sort=desc&per_page=50&system=false`;
+      const endpoint = `/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/notes?order_by=created_at`;
       return await this.makeRequest(endpoint);
     } catch (error) {
       console.error('Ошибка получения комментариев MR:', error);
@@ -70,12 +70,12 @@ export class GitLabAPI {
   async getPipelines(projectId, perPage = 20, username = null) {
     try {
       let endpoint = `/projects/${encodeURIComponent(projectId)}/pipelines?order_by=updated_at&sort=desc&per_page=${perPage}`;
-      
+
       // Фильтр по username (если указан)
       if (username) {
         endpoint += `&username=${encodeURIComponent(username)}`;
       }
-      
+
       return await this.makeRequest(endpoint);
     } catch (error) {
       // Ошибка 403 обычно означает недостаточно прав для доступа к пайплайнам
@@ -115,7 +115,7 @@ export class GitLabAPI {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
-      
+
       const response = await fetch(`${this.apiUrl}/version`, {
         method: 'GET',
         headers: {
@@ -123,9 +123,9 @@ export class GitLabAPI {
         },
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         return { available: true, error: null };
       } else {
